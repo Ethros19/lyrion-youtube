@@ -27,6 +27,7 @@ use Slim::Utils::Log;
 use Slim::Utils::Strings qw(cstring);
 use Slim::Utils::Timers;
 
+use Plugins::YouTubeDirect::Favorites;
 use Plugins::YouTubeDirect::SponsorBlock;
 use Plugins::YouTubeDirect::Source;
 use Plugins::YouTubeDirect::YtDlp;
@@ -52,6 +53,15 @@ sub canSeek         { 1 }
 sub isRepeatingStream { 0 }
 sub audioScrobblerSource { 'P' }
 sub getIcon         { Plugins::YouTubeDirect::Plugin->icon }
+
+# The video's "More" menu: channel and favorite (see Favorites::trackInfoFeed)
+sub trackInfoURL {
+	my ($class, $client, $url) = @_;
+	return sub {
+		my ($client, $cb, $args) = @_;
+		Plugins::YouTubeDirect::Favorites->trackInfoFeed($client, $cb, $args, $url);
+	};
+}
 
 sub getSeekData {
 	my ($class, $client, $song, $newtime) = @_;
@@ -100,7 +110,6 @@ sub getNextTrack {
 				channel    => $info->{channel} || $info->{uploader},
 				channel_id => $info->{channel_id},
 				duration   => $info->{duration},
-				thumb      => $info->{thumbnail},
 				chapters   => normalizeChapters($info->{chapters}),
 			});
 
@@ -426,7 +435,7 @@ sub getMetadataFor {
 		title    => $video->{title} || $id,
 		artist   => $video->{channel},
 		album    => 'YouTube',
-		cover    => $video->{thumb} || thumbnail($id),
+		cover    => thumbnail($id),    # yt-dlp's thumbnail can be .webp, which LMS 9.0 can't show
 		icon     => $icon,
 		duration => $data ? realToVirtual($data->{skips}, $data->{real}) : $video->{duration},
 		type     => $type,

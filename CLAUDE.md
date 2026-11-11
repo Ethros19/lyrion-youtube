@@ -13,6 +13,7 @@ philippe44's YouTube plugin failed. Sibling of ~/Projects/KEXP and
   - `YtDlp.pm`: locate/install (GitHub latest release asset for the platform into `<cachedir>/YouTubeDirect/`, LMS HTTP then curl/wget fallback), daily `yt-dlp -U`, async runs via `AnyEvent::Util::run_cmd` (Windows: Proc::Background + temp files), max 2 concurrent, 60 s timeout; `resolve` (`-f 140/139/... -O <fields>j`) and `list` (`--flat-playlist -J --playlist-items`)
   - `Source.pm`: menus' data layer; Data API when a key works, else yt-dlp; same item shapes either way; channel RSS for the followed feed; in-memory + cache of video metadata for now-playing
   - `API.pm`: Data API v3 client; key = own pref or philippe44's `plugin.youtube:APIkey`; suspends itself on 400 (bad key, 6 h) / 403 (quota, 1 h)
+  - `Favorites.pm`: YouTube Direct's own favorites (pref `favorites`, server-only, separate from Lyrion's Favorites by the owner's choice). `trackInfoFeed` is the whole "More" menu for a `ytdirect://` url (via `ProtocolHandler::trackInfoURL`, which needs no LMS track object, unlike a TrackInfo provider): channel link first, then the favorite entry/entries (same two layouts and echo guard as following). Video items carry `itemActions.info` → `trackinfo items url:…`, which is what makes Material show "More" in a list item's ⋮ menu. Favorites pane at the top level and on every channel page (before the follow entries so nothing moves).
   - `SponsorBlock.pm`: `skipSegments` for all categories (cached 6 h), filtered by the `categories` pref; 404 = none; 5 s timeout, failure = no skips
   - `Util.pm`: pure helpers, unit tested (links, sidx/esds/trun parsing, ADTS, skip timeline, chapters, flat/RSS/API shapes, yt-dlp asset per platform)
   - `Settings.pm` + `HTML/EN/plugins/YouTubeDirect/settings/basic.html`: categories, yt-dlp status/update/auto/custom path, API key
@@ -27,6 +28,7 @@ philippe44's YouTube plugin failed. Sibling of ~/Projects/KEXP and
 - itag 140 = AAC-LC 44.1 kHz ~129 kbps fMP4: `ftyp`, `moov` (~700 B), one `sidx` (v0, timescale 44100, refs = fragments), then `moof`(tfhd 0x02002a default-base-is-moof, trun 0x201)+`mdat`. Head of 128 KB covers ~14 h of index.
 - Stream urls are tied to the resolving IP and expire after hours: never cache them.
 - Flat listings: `ytsearchN:q`; channel/playlist search via `results?search_query=…&sp=EgIQAg%253D%253D` / `EgIQAw%253D%253D`; `/channel/UC…/videos`, `/playlists` (exits 1 "does not have a playlists tab" → empty); uploads entries lack channel names (taken from the top level). Channel RSS `feeds/videos.xml?channel_id=` = latest 15, no key. oEmbed gives title/author for a pasted link.
+- Thumbnails: always `i.ytimg.com/vi/<id>/hqdefault.jpg`. yt-dlp's `thumbnail` is often `vi_webp/…/maxresdefault.webp`, which LMS 9.0's image proxy can't show (radio-tower placeholder), and maxresdefault doesn't exist for every video.
 - SponsorBlock: `GET /api/skipSegments?videoID=&categories=[…]&actionTypes=["skip"]` → array or 404. `music_offtopic` is the "non-music in music videos" category. Coverage varies; many DJ mixes have none.
 
 ## Robustness rules (from the 0.1.3 review)

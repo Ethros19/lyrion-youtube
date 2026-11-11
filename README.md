@@ -8,6 +8,8 @@ the non-music parts of music videos are cut out of the audio as you listen.
   `youtu.be`, Shorts, playlists, channels, `@handles`)
 - **Follow channels in Lyrion** (kept on your server only) and get a merged
   "New from channels you follow" feed
+- **Favorites**: ♥ any video from its More menu (⋮ → More, or Now Playing →
+  More); see them all under Favorites, or one channel's on its page
 - **Chapters as now-playing**: a DJ mix with a timestamped tracklist shows the
   track that's playing, like Mixcloud tracklists
 - **Seek anywhere**, including in long mixes
@@ -76,6 +78,8 @@ segments. Popular sponsored videos usually do; many DJ mixes don't.
 
 No YouTube login. Channels you follow are stored on your Lyrion server only.
 Video ids are sent to SponsorBlock (sponsor.ajay.app) to look up segments.
+Favorites are kept on your Lyrion server only, separate from Lyrion's own
+Favorites.
 
 ## How it works
 

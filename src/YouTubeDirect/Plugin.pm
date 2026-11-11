@@ -14,6 +14,7 @@ use Slim::Utils::Log;
 use Slim::Utils::Prefs;
 use Slim::Utils::Strings qw(cstring);
 
+use Plugins::YouTubeDirect::Favorites;
 use Plugins::YouTubeDirect::ProtocolHandler;
 use Plugins::YouTubeDirect::SponsorBlock;
 use Plugins::YouTubeDirect::Source;
@@ -38,6 +39,7 @@ sub initPlugin {
 		autoUpdate => 1,
 		lastUpdate => 0,
 		follows    => {},
+		favorites  => {},
 	});
 
 	Slim::Player::ProtocolHandlers->registerHandler(
@@ -95,6 +97,13 @@ sub handleFeed {
 			url   => \&followedMenu,
 			passthrough => [$ui],
 			image => _icon('star'),
+		},
+		{
+			name  => cstring($client, 'PLUGIN_YOUTUBEDIRECT_FAVORITES'),
+			type  => 'link',
+			url   => \&favoritesMenu,
+			passthrough => [$ui],
+			image => _icon('favorite'),
 		},
 	] });
 }
@@ -166,6 +175,8 @@ sub _videoItem {
 		image => thumbnail($v->{id}),
 		duration => $v->{duration},
 		on_select => 'play',
+		# "More" in the item's menu: channel and favorite (Favorites::trackInfoFeed)
+		itemActions => { info => { command => ['trackinfo', 'items'], fixedParams => { url => videoUrl($v->{id}) } } },
 	};
 }
 
@@ -270,6 +281,13 @@ sub channelMenu {
 			url   => \&channelPlaylists,
 			passthrough => [{ id => $id, menu => $menu }],
 		},
+		{
+			name  => cstring($client, 'PLUGIN_YOUTUBEDIRECT_FAVORITES'),
+			type  => 'link',
+			image => _icon('favorite'),
+			url   => \&favoritesMenu,
+			passthrough => [{ channel => { id => $id, title => $pass->{title} }, menu => $menu }],
+		},
 	);
 
 	my $following = _follows()->{$id};
@@ -334,10 +352,18 @@ sub playlistMenu {
 
 # Clients repeat requests: LyrionJS re-asks in menu mode whenever a reply is
 # text, and the menu-mode page can hold a different entry at that position
-# (the toggle). Any follow request for a channel this soon after the
-# previous one is that echo, not a decision, so it changes nothing.
-use constant FOLLOW_REPEAT => 2;
-my %lastFollowRequest;
+# (a toggle). An action on the same thing this soon after the previous one is
+# that echo, not a decision, so it changes nothing.
+use constant ECHO_WINDOW => 2;
+my %lastAction;
+
+sub isEcho {
+	my $key = shift;
+	my $now = Time::HiRes::time();
+	my $echo = $now - ($lastAction{$key} || 0) < ECHO_WINDOW;
+	$lastAction{$key} = $now;
+	return $echo;
+}
 
 sub setFollow {
 	my ($client, $cb, $args, $pass) = @_;
@@ -351,11 +377,7 @@ sub setFollow {
 		$cb->({ items => [{ name => sprintf(cstring($client, shift), $name), type => 'text', weblink => "https://www.youtube.com/channel/$id" }] });
 	};
 
-	my $now = Time::HiRes::time();
-	my $echo = $now - ($lastFollowRequest{$id} || 0) < FOLLOW_REPEAT;
-	$lastFollowRequest{$id} = $now;
-
-	if ($echo) {
+	if (isEcho("follow:$id")) {
 		main::INFOLOG && $log->info("ignoring repeated follow request for $id");
 	}
 	elsif ($pass->{follow} && _isTopic($name)) {
@@ -392,6 +414,18 @@ sub followedMenu {
 		},
 		map { _channelItem($client, { id => $_, title => $follows->{$_}{name}, thumb => $follows->{$_}{image} }, $pass) } @ids
 	] });
+}
+
+# YouTube Direct's own favorites (see Favorites.pm): all of them, or one
+# channel's when opened from its page
+sub favoritesMenu {
+	my ($client, $cb, $args, $pass) = @_;
+
+	my @items = map { _videoItem($client, $_) } @{ Plugins::YouTubeDirect::Favorites->list($pass && $pass->{channel}) };
+	return $cb->({ items => \@items }) if @items;
+
+	my $token = $pass && $pass->{channel} ? 'PLUGIN_YOUTUBEDIRECT_NO_CHANNEL_FAVORITES' : 'PLUGIN_YOUTUBEDIRECT_NO_FAVORITES';
+	$cb->({ items => [{ name => cstring($client, $token), type => 'text' }] });
 }
 
 use constant FEED_MAX => 100;
