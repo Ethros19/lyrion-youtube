@@ -1,0 +1,218 @@
+PLUGIN_YOUTUBEDIRECT
+	EN	YouTube Direct
+
+PLUGIN_YOUTUBEDIRECT_MENU
+	EN	YouTube Direct
+
+PLUGIN_YOUTUBEDIRECT_DESC
+	EN	Play YouTube audio on Lyrion, with SponsorBlock: sponsor reads, self-promotion and the non-music parts of music videos are cut out as you listen. Search, follow channels, browse playlists, open links, and see a mix's chapters as now-playing. Works on Lyrion 8 and 9 (including 9.0 servers that can't upgrade) with no shell access: it installs and updates its own copy of yt-dlp. An API key is optional.
+
+PLUGIN_YOUTUBEDIRECT_SEARCH
+	EN	Search
+
+PLUGIN_YOUTUBEDIRECT_SEARCH_VIDEOS
+	EN	Search videos
+
+PLUGIN_YOUTUBEDIRECT_SEARCH_CHANNELS
+	EN	Search channels
+
+PLUGIN_YOUTUBEDIRECT_SEARCH_PLAYLISTS
+	EN	Search playlists
+
+PLUGIN_YOUTUBEDIRECT_OPEN_URL
+	EN	Open a YouTube link
+
+PLUGIN_YOUTUBEDIRECT_FOLLOWED_MENU
+	EN	Channels You Follow
+
+PLUGIN_YOUTUBEDIRECT_NEW_FROM_FOLLOWED
+	EN	New from channels you follow
+
+PLUGIN_YOUTUBEDIRECT_NO_FOLLOWS
+	EN	You're not following any channels yet. Open a channel and choose "Follow in Lyrion".
+
+PLUGIN_YOUTUBEDIRECT_FOLLOW
+	EN	Follow in Lyrion
+
+PLUGIN_YOUTUBEDIRECT_UNFOLLOW
+	EN	Unfollow in Lyrion
+
+PLUGIN_YOUTUBEDIRECT_FOLLOWED
+	EN	Following %s in Lyrion
+
+PLUGIN_YOUTUBEDIRECT_UNFOLLOWED
+	EN	No longer following %s
+
+PLUGIN_YOUTUBEDIRECT_FOLLOWS_COUNT
+	EN	Channels you follow in Lyrion
+
+PLUGIN_YOUTUBEDIRECT_VIDEOS
+	EN	Videos
+
+PLUGIN_YOUTUBEDIRECT_PLAYLISTS
+	EN	Playlists
+
+PLUGIN_YOUTUBEDIRECT_VIDEOS_COUNT
+	EN	%s videos
+
+PLUGIN_YOUTUBEDIRECT_MORE
+	EN	More…
+
+PLUGIN_YOUTUBEDIRECT_EMPTY
+	EN	Nothing here.
+
+PLUGIN_YOUTUBEDIRECT_ERROR
+	EN	Couldn't reach YouTube. Try again in a moment.
+
+PLUGIN_YOUTUBEDIRECT_NOT_FOUND
+	EN	Couldn't find that on YouTube.
+
+PLUGIN_YOUTUBEDIRECT_NO_STREAM
+	EN	This video has no audio stream this plugin can play.
+
+PLUGIN_YOUTUBEDIRECT_NO_YTDLP
+	EN	yt-dlp isn't installed or couldn't run. See YouTube Direct's settings page.
+
+PLUGIN_YOUTUBEDIRECT_ERR_BOT
+	EN	YouTube is asking this server to prove it isn't a bot. Updating yt-dlp (settings page) often helps; otherwise try again later.
+
+PLUGIN_YOUTUBEDIRECT_ERR_AGE
+	EN	This video is age-restricted and needs a YouTube login, which this plugin doesn't do.
+
+PLUGIN_YOUTUBEDIRECT_ERR_PRIVATE
+	EN	This video is private or for channel members only.
+
+PLUGIN_YOUTUBEDIRECT_ERR_LIVE
+	EN	Live streams and premieres aren't supported yet.
+
+PLUGIN_YOUTUBEDIRECT_ERR_UNAVAILABLE
+	EN	This video isn't available (removed, or blocked in your country).
+
+PLUGIN_YOUTUBEDIRECT_LIVE_UNSUPPORTED
+	EN	Live now (live streams aren't supported yet)
+
+PLUGIN_YOUTUBEDIRECT_SKIPPED_N
+	EN	%s SponsorBlock segment(s) skipped, %s
+
+PLUGIN_YOUTUBEDIRECT_VERSION
+	EN	Version
+
+PLUGIN_YOUTUBEDIRECT_SPONSORBLOCK
+	EN	Skip with SponsorBlock
+
+PLUGIN_YOUTUBEDIRECT_SPONSORBLOCK_DESC
+	EN	SponsorBlock is a crowd-sourced list of segments to skip. Ticked kinds are cut out of the audio as it plays (the time shown skips with them). Only videos someone has marked up have segments; YouTube's own ads never reach this plugin at all.
+
+PLUGIN_YOUTUBEDIRECT_CAT_SPONSOR
+	EN	Sponsor
+
+PLUGIN_YOUTUBEDIRECT_CAT_SPONSOR_DESC
+	EN	paid promotions and sponsor reads
+
+PLUGIN_YOUTUBEDIRECT_CAT_SELFPROMO
+	EN	Self-promotion
+
+PLUGIN_YOUTUBEDIRECT_CAT_SELFPROMO_DESC
+	EN	merch, Patreon, the creator's other channels
+
+PLUGIN_YOUTUBEDIRECT_CAT_INTERACTION
+	EN	Interaction reminder
+
+PLUGIN_YOUTUBEDIRECT_CAT_INTERACTION_DESC
+	EN	"like and subscribe"
+
+PLUGIN_YOUTUBEDIRECT_CAT_MUSIC_OFFTOPIC
+	EN	Non-music
+
+PLUGIN_YOUTUBEDIRECT_CAT_MUSIC_OFFTOPIC_DESC
+	EN	talking and other non-music parts of music videos and mixes
+
+PLUGIN_YOUTUBEDIRECT_CAT_INTRO
+	EN	Intro
+
+PLUGIN_YOUTUBEDIRECT_CAT_INTRO_DESC
+	EN	intro animations and title cards (can include music: off by default)
+
+PLUGIN_YOUTUBEDIRECT_CAT_OUTRO
+	EN	Outro
+
+PLUGIN_YOUTUBEDIRECT_CAT_OUTRO_DESC
+	EN	end cards and credits
+
+PLUGIN_YOUTUBEDIRECT_CAT_PREVIEW
+	EN	Preview / recap
+
+PLUGIN_YOUTUBEDIRECT_CAT_PREVIEW_DESC
+	EN	"coming up" previews and "last time" recaps
+
+PLUGIN_YOUTUBEDIRECT_CAT_FILLER
+	EN	Filler / tangent
+
+PLUGIN_YOUTUBEDIRECT_CAT_FILLER_DESC
+	EN	off-topic tangents and jokes
+
+PLUGIN_YOUTUBEDIRECT_YTDLP
+	EN	yt-dlp
+
+PLUGIN_YOUTUBEDIRECT_YTDLP_DESC
+	EN	The helper that gets each video's audio address from YouTube. YouTube changes often and older versions stop working, so this plugin keeps its own copy in Lyrion's cache folder and can update it daily. It runs for a second or two per video, then exits.
+
+PLUGIN_YOUTUBEDIRECT_YTDLP_VERSION
+	EN	Installed
+
+PLUGIN_YOUTUBEDIRECT_YTDLP_CHECKED
+	EN	last updated
+
+PLUGIN_YOUTUBEDIRECT_YTDLP_NOT_INSTALLED
+	EN	Not installed yet: it downloads automatically the first time you play a video, or press the button.
+
+PLUGIN_YOUTUBEDIRECT_YTDLP_UPDATE_NOW
+	EN	Update yt-dlp now
+
+PLUGIN_YOUTUBEDIRECT_YTDLP_INSTALL_NOW
+	EN	Install yt-dlp now
+
+PLUGIN_YOUTUBEDIRECT_YTDLP_UPDATING
+	EN	Updating in the background; reload this page in a minute.
+
+PLUGIN_YOUTUBEDIRECT_YTDLP_AUTO
+	EN	Update yt-dlp automatically once a day
+
+PLUGIN_YOUTUBEDIRECT_YTDLP_PATH
+	EN	Custom yt-dlp (optional)
+
+PLUGIN_YOUTUBEDIRECT_YTDLP_PATH_DESC
+	EN	Leave empty to use the plugin's own copy. If the server already has a yt-dlp you'd rather use, enter its full path; you'll then have to keep it updated yourself.
+
+PLUGIN_YOUTUBEDIRECT_API_KEY
+	EN	YouTube Data API key (optional)
+
+PLUGIN_YOUTUBEDIRECT_API_KEY_DESC
+	EN	Without a key, search and browsing go through yt-dlp, a little slower but with no quota. With a key (free from Google Cloud Console: enable "YouTube Data API v3", then create an API key) they're faster, limited to about 100 searches a day. If the key stops working, the plugin quietly falls back to yt-dlp.
+
+PLUGIN_YOUTUBEDIRECT_API_USING_OWN
+	EN	Using this key.
+
+PLUGIN_YOUTUBEDIRECT_API_USING_YOUTUBE
+	EN	Using the key from the YouTube plugin's settings.
+
+PLUGIN_YOUTUBEDIRECT_API_NONE
+	EN	No key: using yt-dlp for search and browsing.
+
+PLUGIN_YOUTUBEDIRECT_PRIVACY
+	EN	Privacy
+
+PLUGIN_YOUTUBEDIRECT_PRIVACY_TEXT
+	EN	No YouTube login, ever. Channels you follow are kept on this Lyrion server only. Video ids are sent to sponsor.ajay.app (SponsorBlock) to look up segments.
+
+PLUGIN_YOUTUBEDIRECT_PROJECT
+	EN	Project
+
+PLUGIN_YOUTUBEDIRECT_HELP
+	EN	Help & feedback
+
+PLUGIN_YOUTUBEDIRECT_HELP_TEXT
+	EN	Something not working, or have an idea?
+
+PLUGIN_YOUTUBEDIRECT_HELP_LINK
+	EN	Open an issue on GitHub

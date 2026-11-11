@@ -1,0 +1,51 @@
+{
+ "id": "sasha kohana",
+ "title": "sasha kohana",
+ "_type": "playlist",
+ "entries": [
+  {
+   "_type": "url",
+   "ie_key": "YoutubeTab",
+   "id": "UCMFz_xS7TI7tBJrgmlmyjLA",
+   "url": "https://www.youtube.com/channel/UCMFz_xS7TI7tBJrgmlmyjLA",
+   "title": "SASHA KOHANA",
+   "channel": "SASHA KOHANA",
+   "channel_id": "UCMFz_xS7TI7tBJrgmlmyjLA",
+   "thumbnails": [
+    {
+     "url": "//yt3.ggpht.com/fgTFshswb5GLUvLsx_CQTbDAYZOAvcvXWClGsYJXP7KueXo_pf0jFPo8YQKNQcSJzZSz7cqj=s88-c-k-c0x00ffffff-no-rj-mo",
+     "height": 88,
+     "width": 88
+    },
+    {
+     "url": "//yt3.ggpht.com/fgTFshswb5GLUvLsx_CQTbDAYZOAvcvXWClGsYJXP7KueXo_pf0jFPo8YQKNQcSJzZSz7cqj=s176-c-k-c0x00ffffff-no-rj-mo",
+     "height": 176,
+     "width": 176
+    }
+   ],
+   "channel_follower_count": 12700
+  },
+  {
+   "_type": "url",
+   "ie_key": "YoutubeTab",
+   "id": "UC1-ZS79k0xUlEPUxUpYHcGQ",
+   "url": "https://www.youtube.com/channel/UC1-ZS79k0xUlEPUxUpYHcGQ",
+   "title": "Sasha Kohana - Topic",
+   "channel": "Sasha Kohana - Topic",
+   "channel_id": "UC1-ZS79k0xUlEPUxUpYHcGQ",
+   "thumbnails": [
+    {
+     "url": "//yt3.ggpht.com/MnDP17RW6fHS5slzJQIMU1j50-LQwxg94Z6MXmj_5IGc2RWRn7PY_Ls4_Uvrgbp9kcmkuMXg_Z8=s88-c-k-c0x00ffffff-no-rj-mo",
+     "height": 88,
+     "width": 88
+    },
+    {
+     "url": "//yt3.ggpht.com/MnDP17RW6fHS5slzJQIMU1j50-LQwxg94Z6MXmj_5IGc2RWRn7PY_Ls4_Uvrgbp9kcmkuMXg_Z8=s176-c-k-c0x00ffffff-no-rj-mo",
+     "height": 176,
+     "width": 176
+    }
+   ],
+   "channel_follower_count": 54
+  }
+ ]
+}

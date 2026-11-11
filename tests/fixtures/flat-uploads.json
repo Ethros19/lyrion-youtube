@@ -1,0 +1,76 @@
+{
+ "id": "UCMFz_xS7TI7tBJrgmlmyjLA",
+ "channel": "SASHA KOHANA",
+ "channel_id": "UCMFz_xS7TI7tBJrgmlmyjLA",
+ "title": "SASHA KOHANA - Videos",
+ "uploader": "SASHA KOHANA",
+ "_type": "playlist",
+ "entries": [
+  {
+   "_type": "url",
+   "ie_key": "Youtube",
+   "id": "UhEt8o77fXI",
+   "url": "https://www.youtube.com/watch?v=UhEt8o77fXI",
+   "title": "SASHA KOHANA | Melodic Techno & Progressive House Live mix 4K | Barcelona",
+   "duration": 3917,
+   "channel": null,
+   "channel_id": null,
+   "thumbnails": [
+    {
+     "url": "https://i.ytimg.com/vi/UhEt8o77fXI/hq720.jpg?sqp=-oaymwE2COgCEMoBSFXyq4qpAygIARUAAIhCGAFwAcABBvABAfgB_gmAAtAFigIMCAAQARhyIDsoNjAP&rs=AOn4CLC25zuxTryIatBM5qSk4i_-wFZ1ng&usqp=CBQ",
+     "height": 202,
+     "width": 360
+    },
+    {
+     "url": "https://i.ytimg.com/vi/UhEt8o77fXI/hq720.jpg?sqp=-oaymwE2CNAFEJQDSFXyq4qpAygIARUAAIhCGAFwAcABBvABAfgB_gmAAtAFigIMCAAQARhyIDsoNjAP&rs=AOn4CLAJKzipKZ5Nlxr7o-8D50I9Dpk6lA&usqp=CBQ",
+     "height": 404,
+     "width": 720
+    }
+   ]
+  },
+  {
+   "_type": "url",
+   "ie_key": "Youtube",
+   "id": "e4XKBxUp6DY",
+   "url": "https://www.youtube.com/watch?v=e4XKBxUp6DY",
+   "title": "SASHA KOHANA | Melodic Techno Live Mix 4K | Barcelona",
+   "duration": 3603,
+   "channel": null,
+   "channel_id": null,
+   "thumbnails": [
+    {
+     "url": "https://i.ytimg.com/vi/e4XKBxUp6DY/hq720.jpg?sqp=-oaymwEcCOgCEMoBSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLBuhKus5GPpNu5majCwofqEXaAjmw&usqp=CBQ",
+     "height": 202,
+     "width": 360
+    },
+    {
+     "url": "https://i.ytimg.com/vi/e4XKBxUp6DY/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLCiRL1L2WWCUPad_YFKC8K0BQEiuQ&usqp=CBQ",
+     "height": 404,
+     "width": 720
+    }
+   ]
+  },
+  {
+   "_type": "url",
+   "ie_key": "Youtube",
+   "id": "XRVvDGZuiPU",
+   "url": "https://www.youtube.com/watch?v=XRVvDGZuiPU",
+   "title": "SASHA KOHANA | Melodic Techno Live Mix 4K | Barcelona",
+   "duration": 3468,
+   "channel": null,
+   "channel_id": null,
+   "thumbnails": [
+    {
+     "url": "https://i.ytimg.com/vi/XRVvDGZuiPU/hq720.jpg?sqp=-oaymwEcCOgCEMoBSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLC-l0-odOYJepHaX7_I7DZrcs5H2w&usqp=CBQ",
+     "height": 202,
+     "width": 360
+    },
+    {
+     "url": "https://i.ytimg.com/vi/XRVvDGZuiPU/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLAofUK2pQJm1Ez6gYNTXo5lnvkHWw&usqp=CBQ",
+     "height": 404,
+     "width": 720
+    }
+   ]
+  }
+ ]
+}

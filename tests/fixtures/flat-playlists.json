@@ -1,0 +1,51 @@
+{
+ "id": "melodic techno mix",
+ "title": "melodic techno mix",
+ "_type": "playlist",
+ "entries": [
+  {
+   "_type": "url",
+   "ie_key": "YoutubeTab",
+   "id": "PLs2_8NKh_-t9YLMSyZBew3b7pVbmJbyzh",
+   "url": "https://www.youtube.com/playlist?list=PLs2_8NKh_-t9YLMSyZBew3b7pVbmJbyzh",
+   "title": "RAF FENDER MIND BREAKER MELODIC TECHNO MIXES 🔥🚀👾",
+   "channel": "Raf Fender",
+   "channel_id": "UCB_i7laXYFEaa1IqPbWAT_Q",
+   "thumbnails": [
+    {
+     "url": "https://i.ytimg.com/vi/GvuT5zDcytk/hq720.jpg?sqp=-oaymwEXCOgCEMoBSFryq4qpAwkIARUAAIhCGAE=&rs=AOn4CLBsui3inwOknCxShjE92ITLBJ5_PA",
+     "height": 202,
+     "width": 360
+    },
+    {
+     "url": "https://i.ytimg.com/vi/GvuT5zDcytk/hq720.jpg?sqp=-oaymwEXCNAFEJQDSFryq4qpAwkIARUAAIhCGAE=&rs=AOn4CLAptjCGiaoc3ucfsfOA-FxWC_40QA",
+     "height": 404,
+     "width": 720
+    }
+   ],
+   "playlist_count": null
+  },
+  {
+   "_type": "url",
+   "ie_key": "YoutubeTab",
+   "id": "PLxKYx-7jYamHWFBUyd9ZOlVozz9q6lu0Y",
+   "url": "https://www.youtube.com/playlist?list=PLxKYx-7jYamHWFBUyd9ZOlVozz9q6lu0Y",
+   "title": "MELODIC TECHNO 2026",
+   "channel": "MELODIC TECHNO 2026",
+   "channel_id": "UCLJHa40SPC4heDGlVIF54uA",
+   "thumbnails": [
+    {
+     "url": "https://i.ytimg.com/vi/W1G3ePDUISg/hq720.jpg?sqp=-oaymwExCOgCEMoBSFryq4qpAyMIARUAAIhCGAHwAQH4Af4JgALQBYoCDAgAEAEYeCAfKH8wDw==&rs=AOn4CLC25i2PK2KBD7qLzvRJhfvWrJlszw",
+     "height": 202,
+     "width": 360
+    },
+    {
+     "url": "https://i.ytimg.com/vi/W1G3ePDUISg/hq720.jpg?sqp=-oaymwExCNAFEJQDSFryq4qpAyMIARUAAIhCGAHwAQH4Af4JgALQBYoCDAgAEAEYeCAfKH8wDw==&rs=AOn4CLDHOpZqkCDnbv4OD1rjCNlEcbMHYA",
+     "height": 404,
+     "width": 720
+    }
+   ],
+   "playlist_count": null
+  }
+ ]
+}

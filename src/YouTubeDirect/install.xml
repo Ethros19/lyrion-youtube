@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<extension>
+	<id>YouTubeDirect</id>
+	<name>PLUGIN_YOUTUBEDIRECT</name>
+	<module>Plugins::YouTubeDirect::Plugin</module>
+	<version>0.1.0</version>
+	<description>PLUGIN_YOUTUBEDIRECT_DESC</description>
+	<creator>Ethan Rosch</creator>
+	<category>musicservices</category>
+	<icon>plugins/YouTubeDirect/html/images/youtube-direct-1_svg.png</icon>
+	<optionsURL>plugins/YouTubeDirect/settings/basic.html</optionsURL>
+	<type>2</type><!-- type=extension -->
+	<targetApplication>
+		<id>Lyrion Music Server</id>
+		<minVersion>8.0</minVersion>
+		<maxVersion>*</maxVersion>
+	</targetApplication>
+</extension>

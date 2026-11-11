@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<extensions>
+	<details>
+		<title lang="EN">YouTube Direct</title>
+	</details>
+	<plugins>
+		<plugin name="YouTubeDirect" version="0.1.0" minTarget="8.0" maxTarget="*">
+			<title lang="EN">YouTube Direct</title>
+			<desc lang="EN">YouTube audio for Lyrion with SponsorBlock: sponsor reads and the non-music parts of mixes are cut out as you listen. Search, follow channels, playlists, links and chapters. Installs and updates its own yt-dlp (no shell access needed); API key optional. Built for Lyrion 9.0 servers that can't upgrade; works on 8.x and 9.x.</desc>
+			<creator>Ethan Rosch</creator>
+			<category>musicservices</category>
+			<link>https://github.com/Ethros19/lyrion-youtube</link>
+			<url>https://github.com/Ethros19/lyrion-youtube/releases/download/v0.1.0/YouTubeDirect-0.1.0.zip</url>
+			<sha>c46b32233859d7c79521a1dbda5dcba5d303a65d</sha>
+		</plugin>
+	</plugins>
+</extensions>

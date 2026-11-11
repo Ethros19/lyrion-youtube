@@ -1,0 +1,29 @@
+# Unit tests on every push; on a weekly schedule, also check that the
+# YouTube and SponsorBlock services still behave the way the plugin expects.
+# A failed scheduled run emails the repo owner.
+name: checks
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "23 14 * * 1"   # Mondays, 14:23 UTC
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Unit tests
+        run: prove tests/
+
+  youtube-services:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install yt-dlp
+        run: pip install --upgrade yt-dlp
+      - name: YouTube & SponsorBlock
+        run: python3 scripts/smoke.py

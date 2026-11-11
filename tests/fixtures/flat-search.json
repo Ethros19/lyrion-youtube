@@ -1,0 +1,71 @@
+{
+ "id": "sasha kohana barcelona",
+ "title": "sasha kohana barcelona",
+ "_type": "playlist",
+ "entries": [
+  {
+   "_type": "url",
+   "ie_key": "Youtube",
+   "id": "UhEt8o77fXI",
+   "url": "https://www.youtube.com/watch?v=UhEt8o77fXI",
+   "title": "SASHA KOHANA | Melodic Techno & Progressive House Live mix 4K | Barcelona",
+   "duration": 3917,
+   "channel": "SASHA KOHANA",
+   "channel_id": "UCMFz_xS7TI7tBJrgmlmyjLA",
+   "thumbnails": [
+    {
+     "url": "https://i.ytimg.com/vi/UhEt8o77fXI/hq720.jpg?sqp=-oaymwE2COgCEMoBSFXyq4qpAygIARUAAIhCGAFwAcABBvABAfgB_gmAAtAFigIMCAAQARhyIDsoNjAP&rs=AOn4CLC25zuxTryIatBM5qSk4i_-wFZ1ng",
+     "height": 202,
+     "width": 360
+    },
+    {
+     "url": "https://i.ytimg.com/vi/UhEt8o77fXI/hq720.jpg?sqp=-oaymwE2CNAFEJQDSFXyq4qpAygIARUAAIhCGAFwAcABBvABAfgB_gmAAtAFigIMCAAQARhyIDsoNjAP&rs=AOn4CLAJKzipKZ5Nlxr7o-8D50I9Dpk6lA",
+     "height": 404,
+     "width": 720
+    }
+   ],
+   "view_count": 37800
+  },
+  {
+   "_type": "url",
+   "ie_key": "Youtube",
+   "id": "m2j8bMa_c0A",
+   "url": "https://www.youtube.com/watch?v=m2j8bMa_c0A",
+   "title": "SASHA KOHANA | Melodic House & Techno Live Mix 4k | Barcelona",
+   "duration": 3737,
+   "channel": "SASHA KOHANA",
+   "channel_id": "UCMFz_xS7TI7tBJrgmlmyjLA",
+   "thumbnails": [
+    {
+     "url": "https://i.ytimg.com/vi/m2j8bMa_c0A/hq720.jpg?sqp=-oaymwEcCOgCEMoBSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLAmPL_JJCy04XglrDvhO2QVpRqd5Q",
+     "height": 202,
+     "width": 360
+    },
+    {
+     "url": "https://i.ytimg.com/vi/m2j8bMa_c0A/hq720.jpg?sqp=-oaymwEcCNAFEJQDSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLBh9EeMtnfZxJDUxGVscmxLmjrl7Q",
+     "height": 404,
+     "width": 720
+    }
+   ],
+   "view_count": 14329
+  },
+  {
+   "_type": "url",
+   "ie_key": "Youtube",
+   "id": "ni8L4mOlEos",
+   "url": "https://www.youtube.com/watch?v=ni8L4mOlEos",
+   "title": "KOHANA | Melodic House & Techno, Catalonia, Spain 4K | LIVE",
+   "duration": 3741,
+   "channel": "SASHA KOHANA",
+   "channel_id": "UCMFz_xS7TI7tBJrgmlmyjLA",
+   "thumbnails": [
+    {
+     "url": "https://i.ytimg.com/vi/ni8L4mOlEos/hqdefault.jpg?sqp=-oaymwEcCOADEI4CSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLBnoIIMf35VM1wO-qULm_ecOmeItA",
+     "height": 270,
+     "width": 480
+    }
+   ],
+   "view_count": 54085
+  }
+ ]
+}

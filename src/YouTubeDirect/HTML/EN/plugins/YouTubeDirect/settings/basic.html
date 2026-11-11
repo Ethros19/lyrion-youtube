@@ -1,0 +1,66 @@
+[% PROCESS settings/header.html %]
+
+	[% WRAPPER setting title="PLUGIN_YOUTUBEDIRECT_VERSION" desc="" %]
+		<strong>[% ytdVersion | html %]</strong>
+	[% END %]
+
+	[% WRAPPER setting title="PLUGIN_YOUTUBEDIRECT_SPONSORBLOCK" desc="PLUGIN_YOUTUBEDIRECT_SPONSORBLOCK_DESC" %]
+		[% FOREACH cat IN ytdCategories %]
+			<div>
+				<input type="checkbox" name="cat_[% cat.id | html %]" id="cat_[% cat.id | html %]" value="1" [% IF cat.on %]checked[% END %]>
+				<label for="cat_[% cat.id | html %]"><strong>[% "PLUGIN_YOUTUBEDIRECT_CAT_${cat.id}" | upper | string %]</strong>: [% "PLUGIN_YOUTUBEDIRECT_CAT_${cat.id}_DESC" | upper | string %]</label>
+			</div>
+		[% END %]
+	[% END %]
+
+	[% WRAPPER setting title="PLUGIN_YOUTUBEDIRECT_YTDLP" desc="PLUGIN_YOUTUBEDIRECT_YTDLP_DESC" %]
+		[% IF ytdYtdlpPath %]
+			[% "PLUGIN_YOUTUBEDIRECT_YTDLP_VERSION" | string %]: <strong>[% IF ytdYtdlpVersion %][% ytdYtdlpVersion | html %][% ELSE %]…[% END %]</strong>
+			[% IF ytdYtdlpUpdated %]&nbsp;([% "PLUGIN_YOUTUBEDIRECT_YTDLP_CHECKED" | string %] [% ytdYtdlpUpdated | html %])[% END %]
+			<br><small>[% ytdYtdlpPath | html %]</small>
+		[% ELSE %]
+			[% "PLUGIN_YOUTUBEDIRECT_YTDLP_NOT_INSTALLED" | string %] ([% ytdYtdlpAsset | html %])
+		[% END %]
+		[% IF ytdYtdlpError %]<br><span style="color:#c00">[% ytdYtdlpError | html %]</span>[% END %]
+		[% IF ytdUpdateMessage %]<br><em>[% ytdUpdateMessage | html %]</em>[% END %]
+		<br><input type="submit" name="updateYtdlp" class="stdclick" value="[% IF ytdYtdlpPath %][% "PLUGIN_YOUTUBEDIRECT_YTDLP_UPDATE_NOW" | string %][% ELSE %][% "PLUGIN_YOUTUBEDIRECT_YTDLP_INSTALL_NOW" | string %][% END %]">
+		<br>
+		<input type="checkbox" name="pref_autoUpdate" id="pref_autoUpdate" value="1" [% IF prefs.pref_autoUpdate %]checked[% END %]>
+		<label for="pref_autoUpdate">[% "PLUGIN_YOUTUBEDIRECT_YTDLP_AUTO" | string %]</label>
+	[% END %]
+
+	[% WRAPPER setting title="PLUGIN_YOUTUBEDIRECT_API_KEY" desc="PLUGIN_YOUTUBEDIRECT_API_KEY_DESC" %]
+		<input type="password" class="stdedit" name="pref_apiKey" value="[% prefs.pref_apiKey | html %]" size="45" autocomplete="off">
+		<br>
+		[% IF ytdKeySource == 'own' %]
+			[% "PLUGIN_YOUTUBEDIRECT_API_USING_OWN" | string %]
+		[% ELSIF ytdKeySource == 'youtube' %]
+			[% "PLUGIN_YOUTUBEDIRECT_API_USING_YOUTUBE" | string %]
+		[% ELSE %]
+			[% "PLUGIN_YOUTUBEDIRECT_API_NONE" | string %]
+		[% END %]
+		[% IF ytdKeyError %]<br><span style="color:#c00">[% ytdKeyError | html %]</span>[% END %]
+	[% END %]
+
+	[% WRAPPER setting title="PLUGIN_YOUTUBEDIRECT_YTDLP_PATH" desc="PLUGIN_YOUTUBEDIRECT_YTDLP_PATH_DESC" %]
+		<input type="text" class="stdedit" name="pref_ytdlpPath" value="[% prefs.pref_ytdlpPath | html %]" size="45" placeholder="/usr/local/bin/yt-dlp">
+	[% END %]
+
+	[% WRAPPER setting title="PLUGIN_YOUTUBEDIRECT_FOLLOWED_MENU" desc="" %]
+		[% "PLUGIN_YOUTUBEDIRECT_FOLLOWS_COUNT" | string %]: [% ytdFollows | html %]
+	[% END %]
+
+	[% WRAPPER setting title="PLUGIN_YOUTUBEDIRECT_PRIVACY" desc="" %]
+		[% "PLUGIN_YOUTUBEDIRECT_PRIVACY_TEXT" | string %]
+	[% END %]
+
+	[% WRAPPER setting title="PLUGIN_YOUTUBEDIRECT_PROJECT" desc="" %]
+		<a href="[% ytdProject | html %]" target="_blank" rel="noopener">[% ytdProject | html %]</a>
+	[% END %]
+
+	[% WRAPPER setting title="PLUGIN_YOUTUBEDIRECT_HELP" desc="" %]
+		[% "PLUGIN_YOUTUBEDIRECT_HELP_TEXT" | string %]
+		<a href="[% ytdIssues | html %]" target="_blank" rel="noopener">[% "PLUGIN_YOUTUBEDIRECT_HELP_LINK" | string %]</a>
+	[% END %]
+
+[% PROCESS settings/footer.html %]
