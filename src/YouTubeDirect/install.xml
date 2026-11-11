@@ -3,7 +3,7 @@
 	<id>YouTubeDirect</id>
 	<name>PLUGIN_YOUTUBEDIRECT</name>
 	<module>Plugins::YouTubeDirect::Plugin</module>
-	<version>0.1.1</version>
+	<version>0.1.2</version>
 	<description>PLUGIN_YOUTUBEDIRECT_DESC</description>
 	<creator>Ethan Rosch</creator>
 	<category>musicservices</category>
