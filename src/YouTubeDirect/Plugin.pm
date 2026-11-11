@@ -6,6 +6,7 @@ use base qw(Slim::Plugin::OPMLBased);
 
 use HTTP::Request;
 use JSON::XS::VersionOneAndTwo;
+use Time::HiRes;
 use URI::Escape qw(uri_escape_utf8);
 
 use Slim::Networking::SimpleAsyncHTTP;
@@ -74,19 +75,27 @@ sub icon { __PACKAGE__->_pluginDataFor('icon') }
 sub _icon { 'plugins/YouTubeDirect/html/images/MTL_icon_' . $_[0] . '.png' }
 
 sub handleFeed {
-	my ($client, $cb) = @_;
+	my ($client, $cb, $args) = @_;
+
+	# Does this client use menu mode (Material, Squeezebox controllers) or
+	# plain lists (LyrionJS's own look, the CLI)? Only this top level is
+	# told, and LMS rebuilds the menu from here on every request, so the flag
+	# rides along in every passthrough down to channelMenu.
+	my $ui = { menu => ($args && ref $args->{params} eq 'HASH' && defined $args->{params}{menu}) ? 1 : 0 };
 
 	$cb->({ items => [
 		{
 			name  => cstring($client, 'PLUGIN_YOUTUBEDIRECT_SEARCH'),
 			type  => 'link',
 			url   => \&searchMenu,
+			passthrough => [$ui],
 			image => _icon('search'),
 		},
 		{
 			name  => cstring($client, 'PLUGIN_YOUTUBEDIRECT_FOLLOWED_MENU'),
 			type  => 'link',
 			url   => \&followedMenu,
+			passthrough => [$ui],
 			image => _icon('star'),
 		},
 	] });
@@ -95,7 +104,8 @@ sub handleFeed {
 # Material shows search fields as bare text boxes without icons, so they
 # live in this folder rather than at the top level
 sub searchMenu {
-	my ($client, $cb) = @_;
+	my ($client, $cb, $args, $pass) = @_;
+	my $menu = $pass && $pass->{menu};
 
 	$cb->({ items => [
 		(map {
@@ -103,7 +113,7 @@ sub searchMenu {
 				name  => cstring($client, 'PLUGIN_YOUTUBEDIRECT_SEARCH_' . uc($_) . 'S'),
 				type  => 'search',
 				url   => \&search,
-				passthrough => [{ type => $_ }],
+				passthrough => [{ type => $_, menu => $menu }],
 				image => _icon('search'),
 			}
 		} qw(video channel playlist)),
@@ -111,6 +121,7 @@ sub searchMenu {
 			name  => cstring($client, 'PLUGIN_YOUTUBEDIRECT_OPEN_URL'),
 			type  => 'search',
 			url   => \&openUrl,
+			passthrough => [{ menu => $menu }],
 			image => _icon('link'),
 		},
 	] });
@@ -161,33 +172,33 @@ sub _videoItem {
 }
 
 sub _channelItem {
-	my ($client, $c) = @_;
+	my ($client, $c, $pass) = @_;
 	return {
 		name  => $c->{title} || $c->{id},
 		type  => 'link',
 		url   => \&channelMenu,
-		passthrough => [{ id => $c->{id}, title => $c->{title}, thumb => $c->{thumb} }],
+		passthrough => [{ id => $c->{id}, title => $c->{title}, thumb => $c->{thumb}, menu => $pass && $pass->{menu} }],
 		image => $c->{thumb} || icon(),
 	};
 }
 
 sub _playlistItem {
-	my ($client, $p) = @_;
+	my ($client, $p, $pass) = @_;
 	return {
 		name  => $p->{title} || $p->{id},
 		line2 => join(' · ', grep { $_ } $p->{channel}, defined $p->{count} ? sprintf(cstring($client, 'PLUGIN_YOUTUBEDIRECT_VIDEOS_COUNT'), $p->{count}) : undef),
 		type  => 'link',
 		url   => \&playlistMenu,
-		passthrough => [{ id => $p->{id}, title => $p->{title} }],
+		passthrough => [{ id => $p->{id}, title => $p->{title}, menu => $pass && $pass->{menu} }],
 		image => $p->{thumb} || _icon('playlist_play'),
 	};
 }
 
 sub _item {
-	my ($client, $x) = @_;
-	return _videoItem($client, $x)    if $x->{type} eq 'video';
-	return _channelItem($client, $x)  if $x->{type} eq 'channel';
-	return _playlistItem($client, $x) if $x->{type} eq 'playlist';
+	my ($client, $x, $pass) = @_;
+	return _videoItem($client, $x)           if $x->{type} eq 'video';
+	return _channelItem($client, $x, $pass)  if $x->{type} eq 'channel';
+	return _playlistItem($client, $x, $pass) if $x->{type} eq 'playlist';
 	return;
 }
 
@@ -198,7 +209,7 @@ sub _listResult {
 		my ($res, $error) = @_;
 		return _error($client, $cb, $error) unless $res;
 
-		my @items = grep { $_ } map { _item($client, $_) } @{ $res->{items} || [] };
+		my @items = grep { $_ } map { _item($client, $_, $pass) } @{ $res->{items} || [] };
 
 		push @items, {
 			name  => cstring($client, 'PLUGIN_YOUTUBEDIRECT_MORE'),
@@ -223,7 +234,7 @@ sub search {
 	return _empty($client, $cb) unless defined $query && length $query;
 
 	# a pasted link does what you'd expect
-	return openUrl($client, $cb, { search => $query }) if !$pass->{page} && parseLink($query) && $query =~ m{youtu|^@};
+	return openUrl($client, $cb, { search => $query }, $pass) if !$pass->{page} && parseLink($query) && $query =~ m{youtu|^@};
 
 	Plugins::YouTubeDirect::Source->search($pass->{type}, $query, $pass->{page},
 		_listResult($client, $cb, { %$pass, query => $query }, \&search));
@@ -233,42 +244,71 @@ sub search {
 
 sub _follows { $prefs->get('follows') || {} }
 
+# YouTube's auto-generated "<Artist> - Topic" channels have no Videos or
+# Playlists tab and an empty feed: nothing to follow
+sub _isTopic { ($_[0] // '') =~ / - Topic$/ }
+
 sub channelMenu {
 	my ($client, $cb, $args, $pass) = @_;
 
 	my $id = $pass->{id};
+	my $menu = $pass->{menu};
 	my @items = (
 		{
 			name  => cstring($client, 'PLUGIN_YOUTUBEDIRECT_VIDEOS'),
 			type  => 'link',
 			image => _icon('queue_music'),
 			url   => \&channelVideos,
-			passthrough => [{ id => $id }],
+			passthrough => [{ id => $id, menu => $menu }],
 		},
 		{
 			name  => cstring($client, 'PLUGIN_YOUTUBEDIRECT_PLAYLISTS'),
 			type  => 'link',
 			image => _icon('playlist_play'),
 			url   => \&channelPlaylists,
-			passthrough => [{ id => $id }],
+			passthrough => [{ id => $id, menu => $menu }],
 		},
 	);
 
-	# One Follow/Unfollow toggle, last, so Videos and Playlists never move.
-	# It has no type and no icon on purpose: Material then treats it as a
-	# clickable text row, runs the action in place, shows setFollow's reply
-	# as a message and reloads this page (nextWindow "refresh"), so there's
-	# never a stale toggle to tap. (A link entry would open a new page, and
-	# Material only honours "refresh" after a link when the result is empty,
-	# which LMS never sends in menu mode: it adds an "Empty" item.)
 	my $following = _follows()->{$id};
+	my %who = (id => $id, title => $pass->{title}, thumb => $pass->{thumb});
 
-	push @items, {
-		name  => cstring($client, $following ? 'PLUGIN_YOUTUBEDIRECT_UNFOLLOW' : 'PLUGIN_YOUTUBEDIRECT_FOLLOW'),
-		url   => \&setFollow,
-		passthrough => [{ id => $id, title => $pass->{title}, thumb => $pass->{thumb}, follow => $following ? 0 : 1 }],
-		nextWindow => 'refresh',
-	};
+	if ($menu) {
+		# Menu mode (Material): one Follow/Unfollow toggle with no type and no
+		# icon. Material then treats it as a clickable text row: it runs the
+		# action in place, shows setFollow's reply as a message and reloads
+		# this page (nextWindow "refresh"), so no stale toggle is left to tap.
+		# (As a link it would open a new page instead, and Material only
+		# honours "refresh" after a link whose result is empty, which LMS
+		# never sends in menu mode: it inserts an "Empty" item.)
+		push @items, {
+			name  => cstring($client, $following ? 'PLUGIN_YOUTUBEDIRECT_UNFOLLOW' : 'PLUGIN_YOUTUBEDIRECT_FOLLOW'),
+			url   => \&setFollow,
+			passthrough => [{ %who, follow => $following ? 0 : 1 }],
+			nextWindow => 'refresh',
+		};
+	}
+	else {
+		# Plain lists (LyrionJS's own look) show their old copy of this page
+		# after going back, so a toggle could flip the wrong way. Every
+		# position keeps one meaning instead: the 3rd always follows (just
+		# confirms when already following), the 4th, only there when
+		# following, always unfollows.
+		push @items, {
+			name  => cstring($client, $following ? 'PLUGIN_YOUTUBEDIRECT_FOLLOWING' : 'PLUGIN_YOUTUBEDIRECT_FOLLOW'),
+			type  => 'link',
+			image => _icon('person_add'),
+			url   => \&setFollow,
+			passthrough => [{ %who, follow => 1 }],
+		};
+		push @items, {
+			name  => cstring($client, 'PLUGIN_YOUTUBEDIRECT_UNFOLLOW'),
+			type  => 'link',
+			image => _icon('person_remove'),
+			url   => \&setFollow,
+			passthrough => [{ %who, follow => 0 }],
+		} if $following;
+	}
 
 	$cb->({ items => \@items });
 }
@@ -290,31 +330,51 @@ sub playlistMenu {
 
 # -- follows (kept in Lyrion, never sent anywhere) ------------------------------
 
+# Clients repeat requests: LyrionJS re-asks in menu mode whenever a reply is
+# text, and the menu-mode page can hold a different entry at that position
+# (the toggle). Any follow request for a channel this soon after the
+# previous one is that echo, not a decision, so it changes nothing.
+use constant FOLLOW_REPEAT => 2;
+my %lastFollowRequest;
+
 sub setFollow {
 	my ($client, $cb, $args, $pass) = @_;
 
 	my %follows = %{ _follows() };
 	my $id = $pass->{id};
 	my $name = $pass->{title} || ($follows{$id} && $follows{$id}{name}) || $id;
+	my $reply = sub {
+		# a weblink makes Material show the reply as plain text (it wraps a
+		# lone, unclickable text item in HTML, which its message box shows raw)
+		$cb->({ items => [{ name => sprintf(cstring($client, shift), $name), type => 'text', weblink => "https://www.youtube.com/channel/$id" }] });
+	};
 
-	if ($pass->{follow}) {
-		$follows{$id} ||= { name => $name, image => $pass->{thumb}, added => time() };
+	my $now = Time::HiRes::time();
+	my $echo = $now - ($lastFollowRequest{$id} || 0) < FOLLOW_REPEAT;
+	$lastFollowRequest{$id} = $now;
+
+	if ($echo) {
+		main::INFOLOG && $log->info("ignoring repeated follow request for $id");
 	}
-	else {
-		delete $follows{$id};
+	elsif ($pass->{follow} && _isTopic($name)) {
+		return $reply->('PLUGIN_YOUTUBEDIRECT_TOPIC_NO_FOLLOW');
+	}
+	elsif ($pass->{follow} xor $follows{$id}) {
+		if ($pass->{follow}) {
+			$follows{$id} = { name => $name, image => $pass->{thumb}, added => time() };
+		}
+		else {
+			delete $follows{$id};
+		}
+		$prefs->set(follows => \%follows);
+		main::INFOLOG && $log->info(($pass->{follow} ? 'follow' : 'unfollow') . ": $id ($name)");
 	}
 
-	$prefs->set(follows => \%follows);
-	main::INFOLOG && $log->info(($pass->{follow} ? 'follow' : 'unfollow') . ": $id ($name)");
-
-	# one line of text: Material shows it as a message, then reloads the
-	# channel page in place (see channelMenu)
-	my $token = $pass->{follow} ? 'PLUGIN_YOUTUBEDIRECT_FOLLOWED' : 'PLUGIN_YOUTUBEDIRECT_UNFOLLOWED';
-	$cb->({ items => [{ name => sprintf(cstring($client, $token), $name), type => 'text' }] });
+	$reply->($follows{$id} ? 'PLUGIN_YOUTUBEDIRECT_FOLLOWED' : 'PLUGIN_YOUTUBEDIRECT_UNFOLLOWED');
 }
 
 sub followedMenu {
-	my ($client, $cb) = @_;
+	my ($client, $cb, $args, $pass) = @_;
 
 	my $follows = _follows();
 	my @ids = sort { lc($follows->{$a}{name} || $a) cmp lc($follows->{$b}{name} || $b) } keys %$follows;
@@ -328,7 +388,7 @@ sub followedMenu {
 			url   => \&followedFeed,
 			image => _icon('new_releases'),
 		},
-		map { _channelItem($client, { id => $_, title => $follows->{$_}{name}, thumb => $follows->{$_}{image} }) } @ids
+		map { _channelItem($client, { id => $_, title => $follows->{$_}{name}, thumb => $follows->{$_}{image} }, $pass) } @ids
 	] });
 }
 
@@ -387,7 +447,8 @@ sub _oembed {
 
 # Paste a YouTube link: a video plays, a playlist or channel opens
 sub openUrl {
-	my ($client, $cb, $args) = @_;
+	my ($client, $cb, $args, $pass) = @_;
+	my $menu = $pass && $pass->{menu};
 
 	my $link = parseLink($args->{search}) or return _error($client, $cb, 'PLUGIN_YOUTUBEDIRECT_NOT_FOUND');
 
@@ -396,14 +457,14 @@ sub openUrl {
 	}
 
 	if ($link->{type} eq 'playlist') {
-		return playlistMenu($client, $cb, $args, { id => $link->{id} });
+		return playlistMenu($client, $cb, $args, { id => $link->{id}, menu => $menu });
 	}
 
 	my $ref = $link->{id} || $link->{handle} || $link->{url};
 	Plugins::YouTubeDirect::Source->channel($ref, sub {
 		my ($channel, $error) = @_;
 		return _error($client, $cb, $error) unless $channel;
-		channelMenu($client, $cb, $args, $channel);
+		channelMenu($client, $cb, $args, { %$channel, menu => $menu });
 	});
 }
 

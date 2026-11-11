@@ -155,10 +155,11 @@ sub channel {
 		$cb->($ch);
 	};
 
+	# the channel's main page, not its Videos tab: "- Topic" channels have no tabs
 	my $viaYtdlp = sub {
-		my $url = isChannelId($ref) ? "https://www.youtube.com/channel/$ref/videos"
-		        : $ref =~ m{^https?://} ? "$ref/videos"
-		        : 'https://www.youtube.com/@' . uri_escape_utf8($ref) . '/videos';
+		my $url = isChannelId($ref) ? "https://www.youtube.com/channel/$ref"
+		        : $ref =~ m{^https?://} ? $ref
+		        : 'https://www.youtube.com/@' . uri_escape_utf8($ref);
 		Plugins::YouTubeDirect::YtDlp->list($url, 1, 1, sub {
 			my $data = shift || return $finish->();
 			my ($thumb) = map { $_->{url} } sort { ($b->{width} || 0) <=> ($a->{width} || 0) } grep { $_->{url} && ($_->{id} || '') =~ /avatar/ } @{ $data->{thumbnails} || [] };
