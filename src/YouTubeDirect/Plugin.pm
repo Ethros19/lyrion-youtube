@@ -255,19 +255,31 @@ sub channelMenu {
 	);
 
 	# LMS addresses menu entries by position and rebuilds this page on every
-	# request, while Material shows its old copy when you go back. So
-	# "Follow" sits first and "Unfollow" last: a tap on a stale entry lands
-	# on Videos or Playlists, never on the opposite action.
+	# request, while remotes keep showing their old copy after a tap. So every
+	# position means the same thing in both states: 3rd is always "follow"
+	# (a no-op confirmation when already following), 4th is always
+	# "unfollow" (only there when following). A tap on a stale page can't do
+	# the opposite of what it showed, and Videos/Playlists never move.
 	my $following = _follows()->{$id};
-	my $entry = {
-		name  => cstring($client, $following ? 'PLUGIN_YOUTUBEDIRECT_UNFOLLOW' : 'PLUGIN_YOUTUBEDIRECT_FOLLOW'),
+	my %who = (id => $id, title => $pass->{title}, thumb => $pass->{thumb});
+
+	push @items, {
+		name  => cstring($client, $following ? 'PLUGIN_YOUTUBEDIRECT_FOLLOWING' : 'PLUGIN_YOUTUBEDIRECT_FOLLOW'),
 		type  => 'link',
-		image => _icon($following ? 'person_remove' : 'person_add'),
+		image => _icon('person_add'),
 		url   => \&setFollow,
-		passthrough => [{ id => $id, title => $pass->{title}, thumb => $pass->{thumb}, follow => !$following }],
+		passthrough => [{ %who, follow => 1 }],
 		nextWindow => 'refresh',
 	};
-	$following ? push(@items, $entry) : unshift(@items, $entry);
+
+	push @items, {
+		name  => cstring($client, 'PLUGIN_YOUTUBEDIRECT_UNFOLLOW'),
+		type  => 'link',
+		image => _icon('person_remove'),
+		url   => \&setFollow,
+		passthrough => [{ %who, follow => 0 }],
+		nextWindow => 'refresh',
+	} if $following;
 
 	$cb->({ items => \@items });
 }

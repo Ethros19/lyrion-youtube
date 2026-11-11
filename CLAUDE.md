@@ -40,7 +40,7 @@ philippe44's YouTube plugin failed. Sibling of ~/Projects/KEXP and
 - Material: `MTL_icon_<name>` image paths get themed Material icons; search fields render as bare text boxes, so they live in the Search folder.
 - Material only refreshes now-playing on push (`newmetadata`): `_scheduleTrackChange` wakes it at the next chapter boundary (capped 60 s), mapping video time ↔ the skip-adjusted timeline.
 - Playable rows use the full favourite title as `name`, `line1`/`line2` for display. Don't give `link` items a `play` attribute.
-- Follow entry FIRST when not following, Unfollow LAST when following (LMS addresses entries by position; Material shows stale copies).
+- LMS addresses OPML entries by position and remotes show stale pages after a tap: every position must mean the same thing in every state. Channel page = Videos, Playlists, Follow (shows "✓ Following" when following; idempotent), Unfollow (only when following). The Mixcloud "Follow first / Unfollow last" layout shifts everything by one and turned a stale "Playlists" tap into Unfollow (fixed in 0.1.1).
 - Most CLI menu queries hang without a connected player: start the test player.
 
 ## No secrets
