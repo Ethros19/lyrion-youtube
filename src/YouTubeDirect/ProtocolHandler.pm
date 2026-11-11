@@ -24,7 +24,6 @@ use Time::HiRes;
 use Slim::Networking::SimpleAsyncHTTP;
 use Slim::Utils::Errno;
 use Slim::Utils::Log;
-use Slim::Utils::Prefs;
 use Slim::Utils::Strings qw(cstring);
 use Slim::Utils::Timers;
 
@@ -37,7 +36,6 @@ use Plugins::YouTubeDirect::Util qw(
 );
 
 my $log   = logger('plugin.youtubedirect');
-my $prefs = preferences('plugin.youtubedirect');
 
 use constant HEAD_BYTES     => 131_072;   # ftyp + moov + sidx; ~14 h of index
 use constant MAX_RANGE      => 524_288;   # YouTube 403s larger ranges
@@ -71,12 +69,22 @@ sub getNextTrack {
 	my ($info, $error, $segments);
 	my $pending = 2;
 
-	my $ready = sub {
+	# a die inside these async callbacks would otherwise leave the player
+	# "connecting" forever, with only LMS's generic "error in callback" logged
+	my $safely = sub {
+		my $code = shift;
+		eval { $code->(); 1 } or do {
+			$log->error("Couldn't start $id: $@");
+			$errorCb->('PLUGIN_YOUTUBEDIRECT_ERROR', $url);
+		};
+	};
+
+	my $ready = sub { $safely->(sub {
 		return if --$pending;
 		return $errorCb->($error || 'PLUGIN_YOUTUBEDIRECT_ERROR', $url) unless $info;
 
-		_loadIndex($info, sub {
-			my ($index, $config, $indexError) = @_;
+		_loadIndex($info, sub { my @args = @_; $safely->(sub {
+			my ($index, $config, $indexError) = @args;
 			return $errorCb->($indexError, $url) unless $index;
 
 			my $skips = mergeSkips($segments, $index->{duration});
@@ -120,8 +128,8 @@ sub getNextTrack {
 			Slim::Control::Request::notifyFromArray($song->master, ['newmetadata']);
 
 			$successCb->();
-		});
-	};
+		}) });
+	}) };
 
 	Plugins::YouTubeDirect::YtDlp->resolve($id, sub { ($info, $error) = @_; $ready->() });
 	Plugins::YouTubeDirect::SponsorBlock->get($id, sub { $segments = shift; $ready->() });
@@ -156,6 +164,9 @@ sub _getRange {
 				my $content = shift->content;
 				return $finish->(undef, 'empty response', 0) unless length $content;
 				$buf .= $content;
+				# a short answer means we reached the end of the file (a video
+				# shorter than our header request): asking for more would get a 416
+				return $finish->($buf) if length($content) < $to - $from + 1;
 				$piece->();
 			},
 			sub {
@@ -182,12 +193,16 @@ sub _loadIndex {
 		return;
 	};
 
+	# a network failure isn't "this video can't be played": say so
+	my $fetchFailed = sub {
+		my ($what, $error) = @_;
+		$log->error("Couldn't read $info->{id}'s $what: $error");
+		$cb->(undef, undef, 'PLUGIN_YOUTUBEDIRECT_ERROR');
+	};
+
 	_getRange($info->{url}, $info->{userAgent}, 0, HEAD_BYTES, sub {
 		my ($head, $error) = @_;
-		if (!defined $head) {
-			$log->error("Couldn't read the stream header: $error");
-			return $cb->(undef, undef, 'PLUGIN_YOUTUBEDIRECT_NO_STREAM');
-		}
+		return $fetchFailed->('stream header', $error) unless defined $head;
 
 		my ($index, $config, $more) = $parse->($head);
 		return $cb->($index, $config) if $index;
@@ -195,14 +210,18 @@ sub _loadIndex {
 		# a very long video: its index runs past what we fetched
 		if ($more && $more->{need} <= 4 * MAX_RANGE) {
 			return _getRange($info->{url}, $info->{userAgent}, 0, $more->{need}, sub {
-				my ($bigger) = @_;
-				my ($i, $c) = $parse->($bigger // '');
+				my ($bigger, $error) = @_;
+				return $fetchFailed->('fragment index', $error) unless defined $bigger;
+				my ($i, $c) = $parse->($bigger);
 				return $cb->($i, $c) if $i;
+				$log->error("Unreadable fragment index in $info->{id}'s audio (format $info->{format_id})");
 				$cb->(undef, undef, 'PLUGIN_YOUTUBEDIRECT_NO_STREAM');
 			});
 		}
 
-		$log->error("No fragment index in $info->{id}'s audio (format $info->{format_id})");
+		$log->error($more
+			? "$info->{id}'s fragment index is too large ($more->{need} bytes)"
+			: "No fragment index in $info->{id}'s audio (format $info->{format_id})");
 		$cb->(undef, undef, 'PLUGIN_YOUTUBEDIRECT_NO_STREAM');
 	});
 }
@@ -254,6 +273,7 @@ sub _fetch {
 
 	return if $v->{pending} || $v->{closed} || $v->{eof};
 	return if length($v->{buf}) >= PREFETCH_BYTES;
+	return if $v->{retryAt} && Time::HiRes::time() < $v->{retryAt};    # backing off after a failure
 
 	# don't even fetch fragments that lie entirely inside a skip
 	while ($v->{next} < @$fragments) {
@@ -282,7 +302,12 @@ sub _fetch {
 		return $self->_failed($error) unless defined $bytes;
 
 		my @samples = fmp4Samples($bytes);
-		return $self->_failed("no audio in fragment $v->{next}") unless @samples;
+		if (!@samples) {
+			# the same bytes would come back on a retry: skip this one fragment
+			$log->warn("No audio in fragment $v->{next} of $v->{url}; skipping it");
+			$v->{next}++;
+			return $self->_fetch;
+		}
 
 		my $config = $data->{config};
 		my $frame = 1024 / ($config->{samplerate} || 44100);
@@ -304,6 +329,7 @@ sub _fetch {
 		$v->{buf} .= $out;
 		$v->{next}++;
 		$v->{retries} = 0;
+		$v->{retryAt} = 0;
 
 		$self->_fetch;
 	});
@@ -315,7 +341,7 @@ sub _expired {
 	my $v = ${*$self}{ytd};
 	my $data = $v->{data};
 
-	return $self->_failed($error) if time() - ($data->{resolved} || 0) < REFRESH_AFTER;
+	return $self->_failed($error) if $data->{refreshed} && time() - ($data->{resolved} || 0) < REFRESH_AFTER;
 
 	$log->warn("Stream url for $data->{id} refused ($error); fetching a fresh one");
 	$v->{pending} = 1;
@@ -325,6 +351,7 @@ sub _expired {
 		return if $v->{closed};
 		$v->{pending} = 0;
 		$data->{resolved} = time();
+		$data->{refreshed} = 1;
 		return $self->_failed($err || $error) unless $info;
 		$data->{media} = $info->{url};
 		$data->{userAgent} = $info->{userAgent};
@@ -343,7 +370,8 @@ sub _failed {
 	}
 
 	$log->warn("Fragment $v->{next} of $v->{url} failed ($error), retry $v->{retries}");
-	Slim::Utils::Timers::setTimer($self, Time::HiRes::time() + $v->{retries}, \&_fetch);
+	$v->{retryAt} = Time::HiRes::time() + $v->{retries};
+	Slim::Utils::Timers::setTimer($self, $v->{retryAt}, \&_fetch);
 }
 
 sub sysread {

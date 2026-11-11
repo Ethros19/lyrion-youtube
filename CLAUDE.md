@@ -29,6 +29,14 @@ philippe44's YouTube plugin failed. Sibling of ~/Projects/KEXP and
 - Flat listings: `ytsearchN:q`; channel/playlist search via `results?search_query=…&sp=EgIQAg%253D%253D` / `EgIQAw%253D%253D`; `/channel/UC…/videos`, `/playlists` (exits 1 "does not have a playlists tab" → empty); uploads entries lack channel names (taken from the top level). Channel RSS `feeds/videos.xml?channel_id=` = latest 15, no key. oEmbed gives title/author for a pasted link.
 - SponsorBlock: `GET /api/skipSegments?videoID=&categories=[…]&actionTypes=["skip"]` → array or 404. `music_offtopic` is the "non-music in music videos" category. Coverage varies; many DJ mixes have none.
 
+## Robustness rules (from the 0.1.3 review)
+- Stream retries back off via `retryAt` (sysread calls `_fetch` constantly, so a timer alone doesn't delay anything). One re-resolve is always allowed on 403, then at most once a minute. A fragment with no samples is skipped, not retried.
+- yt-dlp standalone builds are PyInstaller (launcher + worker): time out with TERM, then KILL after 5 s; report a timeout as an error, not "not installed". A downloaded binary must pass `--version` before it's moved into place; a failed install backs off 10 min (the settings button bypasses that). Resolves jump the job queue.
+- LMS hands us raw bytes: decode RSS with `Slim::Utils::Unicode::utf8decode` (from_json already decodes).
+- The API key goes in `X-Goog-Api-Key`, never the URL (LMS's HTTP client logs URLs). A bare 400/403 triggers a 1-unit key check before suspending the API, since a stale page token or private playlist also returns 400/403.
+- SponsorBlock: only cache real arrays; anything else is logged at WARN and means "no skips this time".
+- `getNextTrack`'s async steps and menu building run inside eval so a die reports an error instead of leaving the player "connecting".
+
 ## LMS 9.0 notes
 - Bundled: AnyEvent::Util, Proc::Background, Digest::SHA1. Red Hat splits core Perl (no Devel::Peek, maybe no Digest::SHA): use only what LMS bundles.
 - LMS's async HTTP error callback usually lacks the body: branch on the status in `$error` ("400 Bad Request").

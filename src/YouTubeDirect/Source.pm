@@ -17,6 +17,7 @@ use URI::Escape qw(uri_escape_utf8);
 use Slim::Networking::SimpleAsyncHTTP;
 use Slim::Utils::Cache;
 use Slim::Utils::Log;
+use Slim::Utils::Unicode;
 
 use Plugins::YouTubeDirect::API;
 use Plugins::YouTubeDirect::YtDlp;
@@ -27,11 +28,14 @@ use constant PAGE => 50;
 my $log   = logger('plugin.youtubedirect');
 my $cache = Slim::Utils::Cache->new;
 
-# what we know about videos we've listed, for now-playing
+# what we know about videos we've listed, for now-playing (bounded: it's
+# only a shortcut, the disk cache and the next resolve fill gaps)
 my %videos;
+use constant MAX_REMEMBERED => 2000;
 
 sub remember {
 	my ($class, $items) = @_;
+	%videos = () if keys %videos > MAX_REMEMBERED;
 	for my $v (grep { $_->{type} eq 'video' && $_->{id} } @{ $items || [] }) {
 		$videos{ $v->{id} } = { %{ $videos{ $v->{id} } || {} }, map { defined $v->{$_} ? ($_ => $v->{$_}) : () } qw(id title channel channel_id duration) };
 	}
@@ -40,7 +44,9 @@ sub remember {
 
 sub video {
 	my ($class, $id) = @_;
-	return $videos{$id} ||= $cache->get("ytd:video:$id");
+	return $videos{$id} if $videos{$id};
+	my $v = $cache->get("ytd:video:$id") or return;
+	return $videos{$id} = $v;
 }
 
 # after a successful resolve: keep it for later sessions too
@@ -178,7 +184,8 @@ sub channel {
 	}, 86400);
 }
 
-# A channel's newest uploads for the "New from channels you follow" feed.
+# A channel's newest uploads for the "New from channels you follow" feed:
+# cb->([videos]) or cb->(undef) if nothing could be fetched.
 # The channel RSS feed is free and needs no key; fall back if it fails.
 sub latest {
 	my ($class, $channel, $cb) = @_;
@@ -194,25 +201,24 @@ sub latest {
 	$request->header('User-Agent' => 'Lyrion Music Server (YouTubeDirect)');
 
 	my $fallback = sub {
+		$log->warn("RSS feed for $channel failed ($_[0]); listing the channel instead");
 		$class->channelVideos($channel, undef, sub {
-			my $res = shift;
-			my $items = $res ? [ grep { $_ } @{ $res->{items} }[0 .. 14] ] : [];
-			$cache->set($key, $items, 900) if $res;
+			my $res = shift or return $cb->();
+			my $items = [ grep { $_ } @{ $res->{items} }[0 .. 14] ];
+			$cache->set($key, $items, 900);
 			$cb->($items);
 		});
 	};
 
 	Slim::Networking::SimpleAsyncHTTP->new(
 		sub {
-			my $items = parseRss(shift->content);
-			return $fallback->() unless @$items;
+			# raw bytes from LMS: decode, or titles with accents come out garbled
+			my $items = parseRss(Slim::Utils::Unicode::utf8decode(shift->content));
+			return $fallback->('no entries') unless @$items;
 			$cache->set($key, $items, 900);
 			$cb->($class->remember($items));
 		},
-		sub {
-			main::INFOLOG && $log->info("RSS failed for $channel ($_[1]), falling back");
-			$fallback->();
-		},
+		sub { $fallback->($_[1]) },
 		{ timeout => 15, request => $request },
 	)->get($url);
 }

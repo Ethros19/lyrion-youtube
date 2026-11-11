@@ -43,6 +43,7 @@ sub handler {
 		$updateMessage = Slim::Utils::Strings::string('PLUGIN_YOUTUBEDIRECT_YTDLP_UPDATING');
 		Plugins::YouTubeDirect::YtDlp->update(sub {
 			my ($msg, $error) = @_;
+			$error = Slim::Utils::Strings::string($error) if $error && $error =~ /^PLUGIN_/;
 			$updateMessage = $error ? "yt-dlp: $error" : "yt-dlp: $msg";
 		});
 	}

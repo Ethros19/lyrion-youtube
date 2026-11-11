@@ -34,15 +34,27 @@ use constant MAX_RUNNING => 2;
 use constant TIMEOUT     => 60;
 use constant UPDATE_EVERY => 86400;
 
+use constant INSTALL_RETRY => 600;   # after a failed install, don't try again for 10 min
+use constant TIMED_OUT     => -2;    # exit status we report when we had to kill it
+
 my @queue;
 my $running = 0;
 my $installing;          # callbacks waiting for an install in progress
+my $installFailedAt = 0;
 my $version;             # cached `yt-dlp --version`
 my $lastError;
 
+sub _setError {
+	my $error = shift;
+	$log->error($error) unless defined $lastError && $lastError eq $error;
+	$lastError = $error;
+}
+
 sub init {
 	my $class = shift;
-	# first check a minute after startup, then every 6 hours
+	# know the installed version for the settings page
+	Slim::Utils::Timers::setTimer($class, Time::HiRes::time() + 10, sub { $class->checkVersion(sub {}) });
+	# first update check a minute after startup, then every 6 hours
 	Slim::Utils::Timers::setTimer($class, Time::HiRes::time() + 60, \&_autoUpdate);
 }
 
@@ -94,9 +106,12 @@ sub ensure {
 	}
 
 	if ($prefs->get('ytdlpPath')) {
-		$lastError = "yt-dlp not found at " . $prefs->get('ytdlpPath');
+		_setError("yt-dlp not found (or not executable) at " . $prefs->get('ytdlpPath'));
 		return $cb->(undef, 'PLUGIN_YOUTUBEDIRECT_NO_YTDLP');
 	}
+
+	# don't start another download (and keep menus waiting) after a failure
+	return $cb->(undef, 'PLUGIN_YOUTUBEDIRECT_NO_YTDLP') if time() - $installFailedAt < INSTALL_RETRY;
 
 	$class->install($cb);
 }
@@ -107,8 +122,7 @@ sub install {
 
 	my $asset = asset();
 	if (!$asset) {
-		$lastError = "no yt-dlp build for $^O/$Config{archname}; set a custom path in settings";
-		$log->error($lastError);
+		_setError("no yt-dlp build for $^O/$Config{archname}; set a custom path in settings");
 		return $cb->(undef, 'PLUGIN_YOUTUBEDIRECT_NO_YTDLP');
 	}
 
@@ -125,33 +139,43 @@ sub install {
 
 	$log->warn("Installing yt-dlp ($asset) from $url");
 
-	my $done = sub {
+	my $finish = sub {
 		my $error = shift;
-		if (!$error && -s $part > 1_000_000) {
-			chmod 0755, $part;
-			rename $part, $target or $error = "can't move $part into place: $!";
-		}
-		else {
-			$error ||= 'download incomplete';
-		}
 		unlink $part;
 
 		my @waiting = @{ $installing || [] };
 		$installing = undef;
 
 		if ($error) {
-			$lastError = "yt-dlp install failed: $error";
-			$log->error($lastError);
+			$installFailedAt = time();
+			_setError("yt-dlp install failed: $error (will retry in " . INSTALL_RETRY / 60 . " min, or press Install in settings)");
 			$_->(undef, 'PLUGIN_YOUTUBEDIRECT_NO_YTDLP') for @waiting;
 			return;
 		}
 
 		$lastError = undef;
-		$version = undef;
+		$installFailedAt = 0;
 		$prefs->set(lastUpdate => time());
-		$log->warn("yt-dlp installed at $target");
-		$class->checkVersion(sub {});
+		$log->warn("yt-dlp $version installed at $target");
 		$_->($target) for @waiting;
+	};
+
+	# LMS's HTTP client can report a cut-off download as a success, so only
+	# install a file that actually runs
+	my $done = sub {
+		my $error = shift;
+		return $finish->($error) if $error;
+		return $finish->('download incomplete') unless -s $part > 1_000_000;
+
+		chmod 0755, $part;
+		_spawn([ $part, '--version' ], 60, sub {
+			my ($out, $err, $status) = @_;
+			my ($v) = ($out // '') =~ /(\d{4}\.\d\d\.\d\d(?:\.\d+)?)/;
+			return $finish->("downloaded file doesn't run (exit $status): " . substr($err // '', 0, 200)) if $status || !$v;
+			rename $part, $target or return $finish->("can't move $part into place: $!");
+			$version = $v;
+			$finish->();
+		});
 	};
 
 	# LMS's own HTTP client first; some older LMS versions choke on GitHub's
@@ -200,7 +224,10 @@ sub update {
 	my ($class, $cb) = @_;
 	$cb ||= sub {};
 
-	return $class->install(sub { $cb->($_[0] ? 'installed' : undef, $_[1]) }) unless binary();
+	if (!binary()) {
+		$installFailedAt = 0;    # pressed the button: try now
+		return $class->install(sub { $cb->($_[0] ? 'installed' : undef, $lastError || $_[1]) });
+	}
 	return $cb->(undef, 'custom yt-dlp: update it yourself') unless isManaged();
 
 	_spawn([ binary(), '-U' ], 300, sub {
@@ -228,14 +255,16 @@ sub _autoUpdate {
 
 # -- running -----------------------------------------------------------------
 
-# Run yt-dlp with @args: cb->($stdout, $stderr, $exitStatus)
+# Run yt-dlp with @args: cb->($stdout, $stderr, $exitStatus). Urgent jobs
+# (resolving what a player is waiting to play) go ahead of queued listings.
 sub run {
-	my ($class, $args, $cb, $timeout) = @_;
+	my ($class, $args, $cb, $timeout, $urgent) = @_;
 
 	$class->ensure(sub {
 		my ($bin, $error) = @_;
 		return $cb->(undef, $error, -1) unless $bin;
-		push @queue, [ [ $bin, '--no-update', '--ignore-config', '--no-warnings', '--socket-timeout', '20', @$args ], $cb, $timeout || TIMEOUT ];
+		my $job = [ [ $bin, '--no-update', '--ignore-config', '--no-warnings', '--socket-timeout', '20', @$args ], $cb, $timeout || TIMEOUT ];
+		$urgent ? unshift(@queue, $job) : push(@queue, $job);
 		_next();
 	});
 }
@@ -267,6 +296,7 @@ sub _spawn {
 
 	my ($out, $err, $pid) = ('', '');
 	my $guard = {};
+	my $timedOut;
 	my $cv = eval {
 		AnyEvent::Util::run_cmd(
 			$cmd,
@@ -281,16 +311,23 @@ sub _spawn {
 		return $cb->(undef, "$@", -1);
 	}
 
+	# yt-dlp's standalone builds are a launcher plus the process doing the
+	# work: TERM reaches both (the launcher passes it on); KILL only the
+	# launcher, which would leave the worker holding our pipes open
 	my $kill = sub {
-		$log->error("$cmd->[0] timed out after ${timeout}s; killing it");
-		kill 'KILL', $pid if $pid;
+		$log->error("$cmd->[0] timed out after ${timeout}s; stopping it");
+		$timedOut = 1;
+		return unless $pid;
+		kill 'TERM', $pid;
+		Slim::Utils::Timers::setTimer($guard, Time::HiRes::time() + 5, sub { kill 'KILL', $pid });
 	};
 	Slim::Utils::Timers::setTimer($guard, Time::HiRes::time() + $timeout, $kill);
 
 	$cv->cb(sub {
 		my $status = eval { shift->recv } // -1;
 		Slim::Utils::Timers::killTimers($guard, $kill);
-		$cb->($out, $err, $status >> 8 || ($status & 127 ? -1 : 0));
+		return $cb->($out, ($err // '') . "\n(timed out after ${timeout}s)", TIMED_OUT) if $timedOut;
+		$cb->($out, $err, $status == -1 ? -1 : ($status >> 8 || ($status & 127 ? -1 : 0)));
 	});
 }
 
@@ -340,6 +377,16 @@ sub _errorToken {
 	return 'PLUGIN_YOUTUBEDIRECT_ERROR';
 }
 
+# Why a run gave nothing: yt-dlp missing, killed for taking too long, or
+# something YouTube said
+sub _failureToken {
+	my ($out, $err, $status) = @_;
+	return 'PLUGIN_YOUTUBEDIRECT_ERROR' if $status == TIMED_OUT;
+	return $err if ($err // '') =~ /^PLUGIN_/;                       # from ensure()
+	return 'PLUGIN_YOUTUBEDIRECT_NO_YTDLP' if $status == -1 && !length($out // '');
+	return _errorToken($err);
+}
+
 sub _lastJson {
 	my $out = shift // return;
 	for my $line (reverse split /\n/, $out) {
@@ -368,14 +415,14 @@ sub resolve {
 			$err //= '';
 			$err =~ s/\s+$//;
 			$log->error("yt-dlp couldn't resolve $id: " . (length $err ? substr($err, -500) : "exit $status"));
-			return $cb->(undef, $status == -1 && !$out ? ($err =~ /^PLUGIN_/ ? $err : 'PLUGIN_YOUTUBEDIRECT_NO_YTDLP') : _errorToken($err));
+			return $cb->(undef, _failureToken($out, $err, $status));
 		}
 
 		return $cb->(undef, 'PLUGIN_YOUTUBEDIRECT_ERR_LIVE') if ($info->{live_status} || '') =~ /^(?:is_live|is_upcoming)$/;
 
 		$info->{userAgent} = $info->{http_headers} && $info->{http_headers}{'User-Agent'};
 		$cb->($info);
-	});
+	}, undef, 1);
 }
 
 # Flat listing of a YouTube url (search, channel tab, playlist), items
@@ -397,7 +444,7 @@ sub list {
 			# a channel without that tab, or a search with no results: empty, not an error
 			return $cb->({ entries => [] }) if $err =~ /does not have a \w+ tab|no results|This playlist is empty/i;
 			$log->error("yt-dlp listing failed for $url: " . substr($err, -300));
-			return $cb->(undef, $status == -1 && !$out ? 'PLUGIN_YOUTUBEDIRECT_NO_YTDLP' : _errorToken($err));
+			return $cb->(undef, _failureToken($out, $err, $status));
 		}
 
 		$cache->set($key, $data, $ttl) if $ttl;

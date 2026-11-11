@@ -59,7 +59,12 @@ sub get {
 	Slim::Networking::SimpleAsyncHTTP->new(
 		sub {
 			my $data = eval { from_json(shift->content) };
-			$data = [] unless ref $data eq 'ARRAY';
+			# not a segment list (an outage page, a rate-limit message): don't
+			# remember it as "no segments", just play without skips this time
+			if (ref $data ne 'ARRAY') {
+				$log->warn("SponsorBlock gave an unexpected reply for $id; playing without skips");
+				return $cb->([]);
+			}
 			$cache->set($key, $data, 6 * 3600);
 			main::INFOLOG && $log->info("SponsorBlock: " . scalar(@$data) . " segment(s) for $id");
 			$cb->(skipSegments($data, $cats));

@@ -72,11 +72,13 @@ sub call {
 		return $cb->($cached);
 	}
 
-	my $url = BASE . "$endpoint?$query&key=" . uri_escape_utf8($key);
+	# the key goes in a header, not the url: LMS's HTTP client logs urls
+	my $url = BASE . "$endpoint?$query";
 	my $request = HTTP::Request->new(GET => $url);
 	$request->protocol('HTTP/1.1');
 	$request->header('User-Agent' => 'Lyrion Music Server (YouTubeDirect)');
 	$request->header(Accept => 'application/json');
+	$request->header('X-Goog-Api-Key' => $key);
 
 	main::DEBUGLOG && $log->debug("API $endpoint?$query");
 
@@ -98,21 +100,56 @@ sub call {
 			my $reason = ($err->{errors} && $err->{errors}[0] && $err->{errors}[0]{reason}) || $err->{status} || $error;
 			my $message = $err->{message} || $error;
 
-			# LMS often doesn't hand us the error body, so go by status too:
-			# Google answers a bad key with 400 and quota/access problems with 403
 			if ($reason =~ /quota|rateLimit/i) {
 				_suspend('daily quota used up', 3600);
 			}
-			elsif ($reason =~ /keyInvalid|API_KEY_INVALID|accessNotConfigured|forbidden|keyExpired/i || $message =~ /API key/i || $error =~ /^400/) {
+			elsif ($reason =~ /keyInvalid|API_KEY_INVALID|accessNotConfigured|keyExpired/i || $message =~ /API key/i) {
 				_suspend("API key rejected ($message)", 6 * 3600);
 			}
-			elsif ($error =~ /^403/) {
-				_suspend("API refused the request ($message): quota used up, or the YouTube Data API isn't enabled for this key", 3600);
+			elsif ($error =~ /^(400|403)/) {
+				# LMS usually doesn't hand us the error body, and a bare 400/403
+				# can be this request's fault (a stale page token, a private
+				# playlist) rather than the key's: check the key before giving up on it
+				$log->warn("API $endpoint failed: $error; checking the key");
+				_checkKey();
 			}
 			else {
 				$log->error("API $endpoint failed: $reason ($message)");
 			}
 			$cb->(undef, $reason);
+		},
+		{ timeout => 15, request => $request },
+	)->get($url);
+}
+
+# One cheap request (1 unit) that only a bad key, a used-up quota or a
+# disabled API can fail
+my $checking;
+sub _checkKey {
+	return if $checking;
+	my $key = key() || return;
+	$checking = 1;
+
+	my $url = BASE . 'videos?part=id&id=aqz-KE-bpKQ';
+	my $request = HTTP::Request->new(GET => $url);
+	$request->protocol('HTTP/1.1');
+	$request->header('User-Agent' => 'Lyrion Music Server (YouTubeDirect)');
+	$request->header('X-Goog-Api-Key' => $key);
+
+	Slim::Networking::SimpleAsyncHTTP->new(
+		sub { $checking = 0; main::INFOLOG && $log->info('API key works; that failure was the request') },
+		sub {
+			my (undef, $error) = @_;
+			$checking = 0;
+			if ($error =~ /^400/) {
+				_suspend('API key rejected (400)', 6 * 3600);
+			}
+			elsif ($error =~ /^403/) {
+				_suspend("API refused the key (403): quota used up, or the YouTube Data API isn't enabled for it", 3600);
+			}
+			else {
+				$log->warn("Couldn't check the API key: $error");
+			}
 		},
 		{ timeout => 15, request => $request },
 	)->get($url);

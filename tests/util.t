@@ -187,6 +187,8 @@ sub fixture {
 	like($rss->[0]{published}, qr/^\d{4}-\d\d-\d\dT/, 'rss published');
 	ok(isChannelId($rss->[0]{channel_id}), 'rss channel id');
 	is_deeply(parseRss('<feed></feed>'), [], 'empty feed');
+	my $accented = parseRss("<feed><entry><yt:videoId>aqz-KE-bpKQ</yt:videoId><title>Beyonc\x{e9} &amp; Jay \x{2013} Live</title></entry></feed>");
+	is($accented->[0]{title}, "Beyonc\x{e9} & Jay \x{2013} Live", 'decoded titles keep accents and entities');
 }
 
 # -- yt-dlp assets ---------------------------------------------------------------

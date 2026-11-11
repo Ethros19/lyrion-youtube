@@ -10,7 +10,6 @@ use Time::HiRes;
 use URI::Escape qw(uri_escape_utf8);
 
 use Slim::Networking::SimpleAsyncHTTP;
-use Slim::Utils::Cache;
 use Slim::Utils::Log;
 use Slim::Utils::Prefs;
 use Slim::Utils::Strings qw(cstring);
@@ -19,7 +18,7 @@ use Plugins::YouTubeDirect::ProtocolHandler;
 use Plugins::YouTubeDirect::SponsorBlock;
 use Plugins::YouTubeDirect::Source;
 use Plugins::YouTubeDirect::YtDlp;
-use Plugins::YouTubeDirect::Util qw(videoUrl parseLink thumbnail formatDuration isChannelId);
+use Plugins::YouTubeDirect::Util qw(videoUrl parseLink thumbnail formatDuration);
 
 my $log = Slim::Utils::Log->addLogCategory({
 	category     => 'plugin.youtubedirect',
@@ -28,7 +27,6 @@ my $log = Slim::Utils::Log->addLogCategory({
 });
 
 my $prefs = preferences('plugin.youtubedirect');
-my $cache = Slim::Utils::Cache->new;
 
 sub initPlugin {
 	my $class = shift;
@@ -209,7 +207,11 @@ sub _listResult {
 		my ($res, $error) = @_;
 		return _error($client, $cb, $error) unless $res;
 
-		my @items = grep { $_ } map { _item($client, $_, $pass) } @{ $res->{items} || [] };
+		my @items = eval { grep { $_ } map { _item($client, $_, $pass) } @{ $res->{items} || [] } };
+		if ($@) {
+			$log->error("Couldn't build the menu: $@");
+			return _error($client, $cb);
+		}
 
 		push @items, {
 			name  => cstring($client, 'PLUGIN_YOUTUBEDIRECT_MORE'),
@@ -402,17 +404,20 @@ sub followedFeed {
 	return _empty($client, $cb) unless @ids;
 
 	my $pending = @ids;
+	my $failed = 0;
 	my @videos;
 
 	for my $id (@ids) {
 		Plugins::YouTubeDirect::Source->latest($id, sub {
-			push @videos, @{ shift || [] };
+			my $latest = shift;
+			$latest ? push(@videos, @$latest) : $failed++;
 			return if --$pending;
 
 			my @items = map  { _videoItem($client, $_) }
 			            sort { ($b->{published} || '') cmp ($a->{published} || '') } @videos;
 			splice @items, FEED_MAX if @items > FEED_MAX;
 
+			return _error($client, $cb) if !@items && $failed;
 			return _empty($client, $cb) unless @items;
 			$cb->({ items => \@items });
 		});
