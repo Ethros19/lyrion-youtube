@@ -430,12 +430,13 @@ sub resolve {
 sub list {
 	my ($class, $url, $from, $to, $cb, $ttl) = @_;
 
-	my $key = "ytd:list:$url:$from-$to";
+	my $key = "ytd:list2:$url:$from-$to";
 	if ($ttl && (my $cached = $cache->get($key))) {
 		return $cb->($cached);
 	}
 
-	$class->run([ '--flat-playlist', '-J', '--playlist-items', "$from-$to", '--', $url ], sub {
+	# approximate_date: entries get a timestamp estimated from "3 weeks ago"
+	$class->run([ '--flat-playlist', '-J', '--playlist-items', "$from-$to", '--extractor-args', 'youtubetab:approximate_date', '--', $url ], sub {
 		my ($out, $err, $status) = @_;
 		my $data = _lastJson($out);
 

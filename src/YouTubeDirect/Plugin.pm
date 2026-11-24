@@ -19,7 +19,7 @@ use Plugins::YouTubeDirect::ProtocolHandler;
 use Plugins::YouTubeDirect::SponsorBlock;
 use Plugins::YouTubeDirect::Source;
 use Plugins::YouTubeDirect::YtDlp;
-use Plugins::YouTubeDirect::Util qw(videoUrl parseLink thumbnail formatDuration);
+use Plugins::YouTubeDirect::Util qw(videoUrl parseLink thumbnail formatDuration formatPublished);
 
 my $log = Slim::Utils::Log->addLogCategory({
 	category     => 'plugin.youtubedirect',
@@ -151,6 +151,7 @@ sub _videoItem {
 
 	my $title = $v->{title} || $v->{id};
 	my $full = $v->{channel} ? "$title - $v->{channel}" : $title;
+	my $date = formatPublished($v->{published}, $v->{approx});
 
 	if ($v->{live}) {
 		return {
@@ -162,12 +163,13 @@ sub _videoItem {
 		};
 	}
 
-	# LyrionJS saves favourites under `name`, so it carries the full title;
-	# line1/line2 are what list views show.
+	# LyrionJS saves favourites under `name`, so it carries the full title
+	# (plus the date, since its list shows only `name`); line1/line2 are what
+	# other list views show.
 	return {
-		name  => $full,
+		name  => $date ? "$full · $date" : $full,
 		line1 => $title,
-		line2 => join(' · ', grep { $_ } $v->{channel}, formatDuration($v->{duration}), substr($v->{published} || '', 0, 10)),
+		line2 => join(' · ', grep { $_ } $v->{channel}, formatDuration($v->{duration}), $date),
 		favorites_title => $full,
 		type  => 'audio',
 		url   => videoUrl($v->{id}),

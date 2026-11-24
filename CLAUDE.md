@@ -28,6 +28,7 @@ philippe44's YouTube plugin failed. Sibling of ~/Projects/KEXP and
 - itag 140 = AAC-LC 44.1 kHz ~129 kbps fMP4: `ftyp`, `moov` (~700 B), one `sidx` (v0, timescale 44100, refs = fragments), then `moof`(tfhd 0x02002a default-base-is-moof, trun 0x201)+`mdat`. Head of 128 KB covers ~14 h of index.
 - Stream urls are tied to the resolving IP and expire after hours: never cache them.
 - Flat listings: `ytsearchN:q`; channel/playlist search via `results?search_query=…&sp=EgIQAg%253D%253D` / `EgIQAw%253D%253D`; `/channel/UC…/videos`, `/playlists` (exits 1 "does not have a playlists tab" → empty); uploads entries lack channel names (taken from the top level). Channel RSS `feeds/videos.xml?channel_id=` = latest 15, no key. oEmbed gives title/author for a pasted link.
+- Flat entries have no date unless `--extractor-args youtubetab:approximate_date` (works for search, channel tabs and playlists): `timestamp` is then estimated from "3 weeks ago" text, so rows show it with a `~` and day/month/year precision by age (`Util::formatPublished`). LyrionJS's list shows only `name`, so the date is appended there too.
 - Thumbnails: always `i.ytimg.com/vi/<id>/hqdefault.jpg`. yt-dlp's `thumbnail` is often `vi_webp/…/maxresdefault.webp`, which LMS 9.0's image proxy can't show (radio-tower placeholder), and maxresdefault doesn't exist for every video.
 - SponsorBlock: `GET /api/skipSegments?videoID=&categories=[…]&actionTypes=["skip"]` → array or 404. `music_offtopic` is the "non-music in music videos" category. Coverage varies; many DJ mixes have none.
 

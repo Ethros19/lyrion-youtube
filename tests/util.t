@@ -8,7 +8,7 @@ use JSON::PP qw(decode_json);
 
 use Plugins::YouTubeDirect::Util qw(
 	videoUrl parseVideoUrl parseLink isVideoId isChannelId uploadsPlaylist thumbnail
-	iso8601Duration formatDuration
+	iso8601Duration formatDuration formatPublished
 	topBoxes parseSidx mp4AudioConfig fmp4Samples adtsHeader adtsInfo fragmentAt
 	mergeSkips skippedBefore realToVirtual virtualToReal skipAt skipSegments
 	normalizeChapters splitArtistTitle trackAt
@@ -69,6 +69,13 @@ sub fixture {
 	is(formatDuration(3916), '1:05:16', 'h:mm:ss');
 	is(formatDuration(65), '1:05', 'm:ss');
 	is(formatDuration(0), '', 'zero');
+
+	my $now = 1795478400;    # 2026-11-24T00:00:00Z
+	is(formatPublished('2024-05-01T10:00:00Z'), '2024-05-01', 'exact date');
+	is(formatPublished('2026-11-10T00:00:00Z', 1, $now), '~2026-11-10', 'recent estimate keeps the day');
+	is(formatPublished('2026-06-10T00:00:00Z', 1, $now), '~Jun 2026', 'older estimate: month');
+	is(formatPublished('2024-11-24T00:00:00Z', 1, $now), '~2024', 'year-old estimate: year');
+	is(formatPublished(undef), '', 'no date');
 }
 
 # -- fragmented MP4 (Big Buck Bunny, CC-BY Blender Foundation) ---------------
@@ -166,6 +173,9 @@ sub fixture {
 	ok(isVideoId($videos->[0]{id}), 'video id');
 	ok($videos->[0]{duration} > 0, 'video duration');
 	ok($videos->[0]{channel} && isChannelId($videos->[0]{channel_id}), 'video channel');
+	my $dated = flatEntries({ entries => [{ id => 'aqz-KE-bpKQ', title => 'x', timestamp => 1792886400 }] });
+	is($dated->[0]{published}, '2026-10-25T00:00:00Z', 'yt-dlp timestamp -> ISO date');
+	ok($dated->[0]{approx}, 'yt-dlp dates are estimates');
 
 	my $channels = flatEntries(decode_json(fixture('flat-channels.json')));
 	is($channels->[0]{type}, 'channel', 'channel type');

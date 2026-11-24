@@ -12,7 +12,7 @@ use Exporter qw(import);
 
 our @EXPORT_OK = qw(
 	videoUrl parseVideoUrl parseLink isVideoId isChannelId uploadsPlaylist thumbnail
-	iso8601Duration formatDuration
+	iso8601Duration formatDuration formatPublished
 	topBoxes parseSidx mp4AudioConfig fmp4Samples adtsHeader adtsInfo fragmentAt
 	mergeSkips skippedBefore realToVirtual virtualToReal skipAt skipSegments
 	normalizeChapters splitArtistTitle trackAt
@@ -84,6 +84,22 @@ sub formatDuration {
 	my $h = int($secs / 3600);
 	my $m = int(($secs % 3600) / 60);
 	return $h ? sprintf('%d:%02d:%02d', $h, $m, $secs % 60) : sprintf('%d:%02d', $m, $secs % 60);
+}
+
+# Upload date for a list row. Exact dates (Data API, RSS) as YYYY-MM-DD;
+# yt-dlp's are estimated from YouTube's "3 weeks ago", so they get a ~ and
+# only as much precision as that text had: day under a month, then month,
+# then year.
+sub formatPublished {
+	my ($published, $approx, $now) = @_;
+	my ($y, $m, $d) = ($published || '') =~ /^(\d{4})-(\d\d)-(\d\d)/ or return '';
+	return "$y-$m-$d" unless $approx;
+
+	$now ||= time();
+	my $date = "$y-$m-$d";
+	return "~$date" if $date gt substr(_isoDate($now - 30 * 86400), 0, 10);
+	return sprintf('~%s %d', (qw(Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec))[$m - 1], $y) if $date gt substr(_isoDate($now - 365 * 86400), 0, 10);
+	return "~$y";
 }
 
 # -- fragmented MP4 ------------------------------------------------------------
@@ -521,10 +537,16 @@ sub flatEntries {
 				channel    => $e->{channel} || $e->{uploader} || $data->{channel},
 				channel_id => $e->{channel_id} || $data->{channel_id},
 				live       => ($e->{live_status} || '') eq 'is_live' ? 1 : 0,
+				$e->{timestamp} ? (published => _isoDate($e->{timestamp}), approx => 1) : (),
 			};
 		}
 	}
 	return \@out;
+}
+
+sub _isoDate {
+	my @t = gmtime(shift);
+	return sprintf('%04d-%02d-%02dT%02d:%02d:%02dZ', $t[5] + 1900, $t[4] + 1, @t[3, 2, 1, 0]);
 }
 
 sub _xmlText {
